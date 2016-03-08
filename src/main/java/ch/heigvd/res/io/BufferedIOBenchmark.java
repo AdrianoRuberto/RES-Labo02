@@ -36,7 +36,6 @@ public class BufferedIOBenchmark {
 	  csv = new CSV(fos);
 
 
-
 	  BufferedIOBenchmark bm = new BufferedIOBenchmark();
 
 	  LOG.log(Level.INFO, "");
@@ -108,10 +107,9 @@ public class BufferedIOBenchmark {
 			LOG.log(Level.SEVERE, ex.getMessage(), ex);
 		 }
 	  }
-	  LOG.log(Level.INFO, "  > Done in {0} ms.", Timer.takeTime());
-
-
-	  csv.log(CSV.IOOperation.WRITE, ioStrategy, blockSize, numberOfBytesToWrite, Timer.takeTime());
+	  double time = Timer.takeTime();
+	  LOG.log(Level.INFO, "  > Done in {0} ms.", time);
+	  csv.log(CSV.IOOperation.WRITE, ioStrategy, blockSize, numberOfBytesToWrite, time);
    }
 
    /**
@@ -158,10 +156,10 @@ public class BufferedIOBenchmark {
 	* FileInputStream. Depending on the strategy, it wraps a BufferedInputStream around it, or not. The method
 	* then delegates the actual consumption of bytes to another method, passing it the stream.
 	*/
-   private void consumeTestData(IOStrategy ioStrategy, int blockSize) {
+   private void consumeTestData(IOStrategy ioStrategy, int blockSize) throws IOException {
 	  LOG.log(Level.INFO, "Consuming test data ({0}, block size: {1}...", new Object[]{ioStrategy, blockSize});
 	  Timer.start();
-
+	  int totalBytes = 0;
 	  InputStream is = null;
 	  try {
 		 // Let's connect our stream to a file data sink
@@ -174,7 +172,7 @@ public class BufferedIOBenchmark {
 		 }
 
 		 // Now, let's call the method that does the actual work and produces bytes on the stream
-		 consumeDataFromStream(is, ioStrategy, blockSize);
+		 totalBytes = consumeDataFromStream(is, ioStrategy, blockSize);
 
 		 // We are done, so we only have to close the input stream
 		 is.close();
@@ -189,7 +187,9 @@ public class BufferedIOBenchmark {
 			LOG.log(Level.SEVERE, ex.getMessage(), ex);
 		 }
 	  }
-	  LOG.log(Level.INFO, "  > Done in {0} ms.", Timer.takeTime());
+	  double time = Timer.takeTime();
+	  LOG.log(Level.INFO, "  > Done in {0} ms.", time);
+	  csv.log(CSV.IOOperation.READ, ioStrategy, blockSize, totalBytes, time);
 
    }
 
@@ -198,7 +198,7 @@ public class BufferedIOBenchmark {
 	* Depending on the strategy, the method either reads bytes one by one OR in chunks (the size of the chunk
 	* is passed in parameter). The method does not do anything with the read bytes, except counting them.
 	*/
-   private void consumeDataFromStream(InputStream is, IOStrategy ioStrategy, int blockSize) throws IOException {
+   private int consumeDataFromStream(InputStream is, IOStrategy ioStrategy, int blockSize) throws IOException {
 	  int totalBytes = 0;
 	  // If the strategy dictates to write byte by byte, then it's easy to write the loop; but let's just hope that our client has
 	  // given us a buffered output stream, otherwise the performance will be really bad
@@ -221,7 +221,7 @@ public class BufferedIOBenchmark {
 	  }
 
 	  LOG.log(Level.INFO, "Number of bytes read: {0}", new Object[]{totalBytes});
-	  csv.log(CSV.IOOperation.READ, ioStrategy, blockSize, totalBytes, Timer.takeTime());
+	  return totalBytes;
    }
 
    /**
@@ -258,7 +258,7 @@ class CSV {
 	* @throws IOException
 	*/
    public void log(IOOperation operation, BufferedIOBenchmark.IOStrategy strategy, int blockSize, long fileSizeInBytes,
-				   long durationInMs) throws IOException {
+				   double durationInMs) throws IOException {
 
 	  os.write(operation + "," + strategy + "," + blockSize + "," + fileSizeInBytes + "," + durationInMs + "\n");
    }
