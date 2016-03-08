@@ -197,6 +197,8 @@ public class BufferedIOBenchmark {
 	* This method consumes bytes on the passed stream (the method does not know this stream is buffered or not)
 	* Depending on the strategy, the method either reads bytes one by one OR in chunks (the size of the chunk
 	* is passed in parameter). The method does not do anything with the read bytes, except counting them.
+	*
+	* @return The number of byte read
 	*/
    private int consumeDataFromStream(InputStream is, IOStrategy ioStrategy, int blockSize) throws IOException {
 	  int totalBytes = 0;
